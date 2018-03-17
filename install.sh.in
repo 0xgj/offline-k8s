@@ -1,34 +1,98 @@
 #!/bin/bash
 
+SYSTEMDDIR=/usr/lib/systemd/system
+SERVICEFILE=docker.service
+DOCKERDIR=/usr/bin
+DOCKERBIN=/opt/docker
+SERVICENAME=docker
+
 function untar_payload()
 {
-	match=$(grep --text --line-number '^PAYLOAD:$' $0 | cut -d ':' -f 1)
-	payload_start=$((match + 1))
-	tail -n +$payload_start $0 | docker load -i -
+   match=$(grep --text --line-number '^PAYLOAD:$' $0 | cut -d ':' -f 1)
+   payload_start=$((match + 1))
+   tail -n +$payload_start $0 | docker load -i -
+}
+
+function install_docker()
+{
+   echo "##binary : ${DOCKERBIN} copy to ${DOCKERDIR}"
+   cp -p ${DOCKERBIN}/* ${DOCKERDIR} >/dev/null 2>&1
+   which ${DOCKERBIN}
+   
+   echo "##systemd service: ${SERVICEFILE}"
+   echo "##docker.service: create docker systemd file"
+   cat >${SYSTEMDDIR}/${SERVICEFILE} <<EOF
+[Unit]
+Description=Docker Application Container Engine
+Documentation=http://docs.docker.com
+After=network.target docker.socket
+[Service]
+Type=notify
+EnvironmentFile=-/run/flannel/docker
+WorkingDirectory=/usr/local/bin
+ExecStart=/usr/bin/dockerd \
+-H tcp://0.0.0.0:4243 \
+-H unix:///var/run/docker.sock \
+--selinux-enabled=false \
+--log-opt max-size=1g
+ExecReload=/bin/kill -s HUP \$MAINPID
+# Having non-zero Limit*s causes performance problems due to accounting overhead
+# in the kernel. We recommend using cgroups to do container-local accounting.
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+# Uncomment TasksMax if your systemd version supports it.
+# Only systemd 226 and above support this version.
+#TasksMax=infinity
+TimeoutStartSec=0
+# set delegate yes so that systemd does not reset the cgroups of docker containers
+Delegate=yes
+# kill only the docker process, not all processes in the cgroup
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+EOF
+
+   echo ""
+
+   systemctl daemon-reload
+   echo "##Service status: ${SERVICENAME}"
+   systemctl status ${SERVICENAME}
+   echo "##Service restart: ${SERVICENAME}"
+   systemctl restart ${SERVICENAME}
+   echo "##Service status: ${SERVICENAME}"
+   systemctl status ${SERVICENAME}
+
+   echo "##Service enabled: ${SERVICENAME}"
+   systemctl enable ${SERVICENAME}
+
+   echo "## docker version"
+   docker version
 }
 
 read -p "Install files? " ans
 if [[ "${ans:0:1}"  ||  "${ans:0:1}" ]]; then
-	untar_payload
-	docker run --name kubeadm -itd caogj/kubeadm-v1.9.4:v0.2 /bin/sh
-        docker cp kubeadm:/opt /
-        cp /opt/services/kubelet.service /etc/systemd/system/kubelet.service
-        mkdir -p /etc/systemd/system/kubelet.service.d
-        cp /opt/services/10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-        systemctl enable kubelet && systemctl start kubelet
-        cd /opt/ && tar -zxvf images.tgz
-        for image in $(ls /opt/images); do docker load < /opt/images/${image}; done
-        export PATH=/opt/bin:$PATH
-        kubeadm init --kubernetes-version=v1.9.4
-        mkdir -p $HOME/.kube
-        cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-        chown $(id -u):$(id -g) $HOME/.kube/config
-        cd /opt/contiv-1.1.1
-        IP=$(ifconfig eth0 | grep inet | awk '{print $2}'|cut -d ":" -f 2)
-        ./install/k8s/install.sh -n ${IP}
-        netctl net create -t default --subnet=20.1.1.0/24 -g 20.1.1.1 default-net
-	
+   install_docker
+   untar_payload
+
+   docker run --name kubeadm -itd caogj/kubeadm-v1.9.4:v0.2 /bin/sh
+   docker cp kubeadm:/opt /
+   cp /opt/services/kubelet.service /etc/systemd/system/kubelet.service
+   mkdir -p /etc/systemd/system/kubelet.service.d
+   cp /opt/services/10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+   systemctl enable kubelet && systemctl start kubelet
+   cd /opt/ && tar -zxvf images.tgz
+   for image in $(ls /opt/images); do docker load < /opt/images/${image}; done
+   export PATH=/opt/bin:$PATH
+   kubeadm init --kubernetes-version=v1.9.4
+   mkdir -p $HOME/.kube
+   cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+   chown $(id -u):$(id -g) $HOME/.kube/config
+   cd /opt/contiv-1.1.1
+   IP=$(ifconfig eth0 | grep inet | awk '{print $2}'|cut -d ":" -f 2)
+   ./install/k8s/install.sh -n ${IP}
+   netctl --netmaster http://${IP}:9999 net create -t default --subnet=20.1.1.0/24 -g 20.1.1.1 default-net
 fi
 
 exit 0
-

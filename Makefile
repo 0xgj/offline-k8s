@@ -18,6 +18,7 @@ quay.io/coreos/etcd:v2.3.8
 TARGET_REPO = caogj/kubeadm-v1.9.4
 TARGET_REPO_PUB = caogj/kubeadm-pub-v1.9.4
 TARGET_TAG = v0.2
+DOCKER_VERSION = 17.12.1
 
 release:
 	rm -rf cni bin services images images.tgz contiv* kubeadm.tar
@@ -28,6 +29,7 @@ release:
 	curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/${RELEASE}/build/debs/10-kubeadm.conf" | sed "s:/usr/bin:/opt/bin:g" > services/10-kubeadm.conf
 	curl -L -O https://github.com/contiv/install/releases/download/${CONTIV_VERSION}/contiv-${CONTIV_VERSION}.tgz
 	tar xf contiv-${CONTIV_VERSION}.tgz
+	curl -sSL https://download.docker.com/linux/static/stable/x86_64/docker-$${DOCKER_VERSION}-ce.tgz | tar -zxvf -
 	for image in ${IMAGES}; do docker pull $${image}; done
 	for image in ${IMAGES}; do filename=$$(echo $${image} | cut -f 3 -d '/'); docker save $${image} > images/$${filename}.tar; done
 	tar -czvf images.tgz images && rm -rf images
