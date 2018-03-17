@@ -1,0 +1,2 @@
+FROM scratch
+COPY install.sh /install.sh
