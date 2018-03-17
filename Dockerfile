@@ -1,4 +1,4 @@
-FROM scratch
+FROM alpine
 
 COPY bin /opt/bin
 COPY cni /opt/cni

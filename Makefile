@@ -31,15 +31,17 @@ release:
 	for image in ${IMAGES}; do docker pull $${image}; done
 	for image in ${IMAGES}; do filename=$$(echo $${image} | cut -f 3 -d '/'); docker save $${image} > images/$${filename}.tar; done
 	tar -czvf images.tgz images 
-	#docker rmi -f $$(docker images -q ${TARGET_REPO})
+	docker rmi -f $$(docker images -q ${TARGET_REPO})
 	docker build -t ${TARGET_REPO}:${TARGET_TAG} .
 	rm -rf bin services images images.tgz contiv*
-	cat install.sh.in >install.sh
-	echo "PAYLOAD:" >> install.sh
-	docker save ${TARGET_REPO}:${TARGET_TAG} >>install.sh
-	chmod +x install.sh
 
 pub: release
 	docker build -t $${TARGET_REPO_PUB}:$${TARGET_TAG} -f Dockerfile.pub
 	docker push $${TARGET_REPO_PUB}:$${TARGET_TAG} 
+
+install.sh:
+	cat install.sh.in >install.sh
+	echo "PAYLOAD:" >> install.sh
+	docker save ${TARGET_REPO}:${TARGET_TAG} >>install.sh
+	chmod +x install.sh
 
