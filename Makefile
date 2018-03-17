@@ -21,7 +21,7 @@ TARGET_TAG = v0.2
 
 release:
 	rm -rf cni bin services images images.tgz contiv* kubeadm.tar
-	mkdir -p cni/bin images services
+	mkdir -p cni/bin images services bin
 	curl -L "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-amd64-${CNI_VERSION}.tgz" | tar -C cni/bin -xz
 	cd bin && curl -L --remote-name-all https://storage.googleapis.com/kubernetes-release/release/${RELEASE}/bin/linux/amd64/{kubeadm,kubelet,kubectl} && chmod +x *
 	curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/${RELEASE}/build/debs/kubelet.service" | sed "s:/usr/bin:/opt/bin:g" > services/kubelet.service
@@ -30,10 +30,10 @@ release:
 	tar xf contiv-${CONTIV_VERSION}.tgz
 	for image in ${IMAGES}; do docker pull $${image}; done
 	for image in ${IMAGES}; do filename=$$(echo $${image} | cut -f 3 -d '/'); docker save $${image} > images/$${filename}.tar; done
-	tar -czvf images.tgz images 
-	docker rmi -f $$(docker images -q ${TARGET_REPO})
+	tar -czvf images.tgz images && rm -rf images
+	for i in $$(docker images | awk '{print $$3}' | grep ${TARGET_REPO}| sort | uniq); do docker rmi $${i}; done
 	docker build -t ${TARGET_REPO}:${TARGET_TAG} .
-	rm -rf bin services images images.tgz contiv*
+	rm -rf cni bin services images images.tgz contiv* kubeadm.tar
 
 pub: release
 	docker build -t $${TARGET_REPO_PUB}:$${TARGET_TAG} -f Dockerfile.pub
