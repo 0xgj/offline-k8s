@@ -11,7 +11,7 @@ gcr.io/google_containers/pause-amd64:3.0\
 gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.7\
 gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.7\
 gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.7\
-docker.io/library/nginx:latest\
+docker.io/library/nginx:1.12\
 docker.io/contiv/netplugin:1.1.1\
 docker.io/contiv/auth_proxy:1.1.1\
 quay.io/coreos/etcd:v2.3.8
@@ -37,7 +37,7 @@ release:
 	docker build -t ${TARGET_REPO}:${TARGET_TAG} .
 	rm -rf docker cni bin services images images.tgz contiv* kubeadm.tar
 
-pub: release
+pub: install.sh
 	docker build -t $${TARGET_REPO_PUB}:$${TARGET_TAG} -f Dockerfile.pub
 	docker push $${TARGET_REPO_PUB}:$${TARGET_TAG} 
 
