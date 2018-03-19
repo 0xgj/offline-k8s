@@ -73,6 +73,15 @@ EOF
 
 read -p "Install files? " ans
 if [[ "${ans:0:1}"  ||  "${ans:0:1}" ]]; then
+	eth='eth0'
+   if [[ $(ip link | grep mtu | wc -l) != 1 ]] ; then
+      read -p 'More than 1 NIC card, enter one:' eth
+   fi
+   IP=$(ip a | egrep "inet.*${eth}" | awk '{print $2}' | cut -d '/' -f 1)
+   if [[ ${IP} == "" ]];then
+      echo "Empty IP, exit"
+      exit 1
+   fi
    install_docker
    untar_payload
 
@@ -90,7 +99,6 @@ if [[ "${ans:0:1}"  ||  "${ans:0:1}" ]]; then
    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
    chown $(id -u):$(id -g) $HOME/.kube/config
    cd /opt/contiv-1.1.1
-   IP=$(ifconfig eth0 | grep inet | awk '{print $2}'|cut -d ":" -f 2)
    ./install/k8s/install.sh -n ${IP}
    netctl --netmaster http://${IP}:9999 net create -t default --subnet=20.1.1.0/24 -g 20.1.1.1 default-net
 fi
