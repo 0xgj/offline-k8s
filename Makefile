@@ -15,6 +15,10 @@ docker.io/library/nginx:1.12\
 docker.io/contiv/netplugin:1.1.1\
 docker.io/contiv/auth_proxy:1.1.1\
 quay.io/coreos/etcd:v2.3.8
+quay.io/coreos/etcd:v3.1.10
+quay.io/calico/node:v3.0.3
+quay.io/calico/cni:v2.0.1
+quay.io/calico/kube-controllers:v2.0.1
 TARGET_REPO = caogj/kubeadm-v1.9.4
 TARGET_REPO_PUB = caogj/kubeadm-pub-v1.9.4
 TARGET_TAG = v0.2
@@ -27,6 +31,7 @@ release:
 	cd bin && curl -L --remote-name-all https://storage.googleapis.com/kubernetes-release/release/${RELEASE}/bin/linux/amd64/{kubeadm,kubelet,kubectl} && chmod +x *
 	curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/${RELEASE}/build/debs/kubelet.service" | sed "s:/usr/bin:/opt/bin:g" > services/kubelet.service
 	curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/${RELEASE}/build/debs/10-kubeadm.conf" | sed "s:/usr/bin:/opt/bin:g" > services/10-kubeadm.conf
+	curl -sSL "https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml" > services/calico.yaml
 	curl -L -O https://github.com/contiv/install/releases/download/${CONTIV_VERSION}/contiv-${CONTIV_VERSION}.tgz
 	tar xf contiv-${CONTIV_VERSION}.tgz
 	curl -sSL https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}-ce.tgz | tar -zxvf -
@@ -46,4 +51,3 @@ install.sh: release
 	echo "PAYLOAD:" >> install.sh
 	docker save ${TARGET_REPO}:${TARGET_TAG} >>install.sh
 	chmod +x install.sh
-
