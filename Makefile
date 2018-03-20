@@ -14,10 +14,10 @@ gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.7\
 docker.io/library/nginx:1.12\
 docker.io/contiv/netplugin:1.1.1\
 docker.io/contiv/auth_proxy:1.1.1\
-quay.io/coreos/etcd:v2.3.8
-quay.io/coreos/etcd:v3.1.10
-quay.io/calico/node:v3.0.3
-quay.io/calico/cni:v2.0.1
+quay.io/coreos/etcd:v2.3.8\
+quay.io/coreos/etcd:v3.1.10\
+quay.io/calico/node:v3.0.3\
+quay.io/calico/cni:v2.0.1\
 quay.io/calico/kube-controllers:v2.0.1
 TARGET_REPO = caogj/kubeadm-v1.9.4
 TARGET_REPO_PUB = caogj/kubeadm-pub-v1.9.4
