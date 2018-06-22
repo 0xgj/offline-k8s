@@ -7,7 +7,6 @@ pipeline {
           steps {
             sh 'echo \'hello\''
             echo 'adasdf'
-            waitUntil()
           }
         }
         stage('test') {
